@@ -38,7 +38,7 @@ int main ( int argc, char * args [])
     // millisiseconds since initialization
 
     game . handle_events ();
-    game . update ();
+    game . collisions ();
 
     frame_start = SDL_GetTicks ();
     if ( *frame_delay < ( frame_start - last_frame ) )

@@ -20,19 +20,24 @@ class Game {
     bool running () { return is_running; }
 
     void handle_events ();
-    void update ();
+    void collisions ();
     void render ();
     void load_map ( const char * path );
+    void quit();
 
     static SDL_Event event;
   private:
     // variable wher window will be rendered to
+    size_t map_width;
+    size_t map_height;
     SDL_Window * win;
     bool is_running;
     SDL_Renderer * renderer;
-    size_t map_width;
-    size_t map_height;
 
-    std::vector<std::unique_ptr<Entity>> entities;
+    std::vector<std::unique_ptr<Entity>> enemies;
+
+    std::vector<std::unique_ptr<Entity>> walls;
+    std::vector<std::unique_ptr<Entity>> projectiles;
+    Player player;
 
 };

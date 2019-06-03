@@ -6,7 +6,7 @@ Vector2::Vector2 ()
     y = 0;
 }
 
-Vector2::Vector2 ( int x, int y ) : x ( x ), y (y)
+Vector2::Vector2 ( double x, double y ) : x ( x ), y (y)
 {}
 
 Vector2 & Vector2::Add ( const Vector2 & vec ) 
@@ -86,7 +86,7 @@ Vector2 & Vector2::operator /= ( const Vector2 & v )
 }
 */
 
-Vector2 & Vector2::operator * ( const int & i ) 
+Vector2 & Vector2::operator * ( const double & i ) 
 {
     this -> x *= i;
     this -> y *= i;
