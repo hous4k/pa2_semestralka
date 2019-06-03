@@ -48,7 +48,7 @@ Game::Game ( const char * name,
     player . set_map_size ( map_width, map_height);
     player . set_renderer ( renderer );
     player . load_texture ();
-    player . set_colliders ( &walls, &projectiles, &enemies );
+    player . set_colliders ( &walls, &projectiles );
 
     for ( auto & e : enemies ){
       e -> set_renderer(renderer);
@@ -101,6 +101,7 @@ void Game::collisions() {
     ++pr_index;
   }
 
+//bonus
   pr_index = 0;
   for ( auto & pr : projectiles )
   {
@@ -190,6 +191,15 @@ void Game::handle_events()
       */
 
     }
+
+    if ( event.type == SDL_USEREVENT )
+    {
+      if ( event . user . code == 2 )
+      {
+        delete static_cast<int*>(event . user . data1);
+        delete static_cast<int*>(event . user . data2);
+      }
+    }
   }
 }
 
@@ -224,8 +234,13 @@ void Game::load_map ( const char * path )
 
         case 'E':
           //add enemy entity
-          enemies . emplace_back ( std::make_unique<Enemy> ( Enemy ( x_index * UNIT,y_index * UNIT,UNIT,UNIT, "enemy.png" ) ) );
-          ++x_index;
+          {
+            std::unique_ptr<Enemy> tmp = std::make_unique<Enemy> ( Enemy ( x_index * UNIT,y_index * UNIT,UNIT,UNIT, "enemy.png" ) );
+            //enemies . emplace_back ( std::make_unique<Enemy> ( Enemy ( x_index * UNIT,y_index * UNIT,UNIT,UNIT, "enemy.png" ) ) );
+            tmp -> set_colliders ( &walls );
+            enemies . emplace_back ( std::move(tmp));
+            ++x_index;
+          }
           break;
 
         case '#':

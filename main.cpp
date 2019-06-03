@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Game.h"
 
-Uint32 MY_EVENT_TYPE; 
+//Uint32 MY_EVENT_TYPE; 
 
 using namespace std;
 
@@ -17,18 +17,20 @@ int main ( int argc, char * args [])
   unsigned int frame_time;
 
   size_t last_frame = 0; 
-  MY_EVENT_TYPE = SDL_RegisterEvents(1);
+  //Uint32 MY_EVENT_TYPE;
+  //MY_EVENT_TYPE = SDL_RegisterEvents(1);
   SDL_Event custom_event;
-  if ( MY_EVENT_TYPE != ((Uint32)-1)) {
-    custom_event . type = MY_EVENT_TYPE;
+  //if ( MY_EVENT_TYPE != ((Uint32)-1)) {
+    custom_event . type = SDL_USEREVENT; //MY_EVENT_TYPE;
     // code of timer
     custom_event . user . code = 0;
     custom_event . user . data1 = (void*)frame_delay;
     cout << "custom event created" << endl;
-  } else {
+  /*} else {
     cout << "!!!custom event was not created!!!" << endl;
     return 0;
   }
+  */
 
   Game game ( "semestralka", false );
 

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cmath>
 #include <iterator>
 #include "Vector2.h"
 
@@ -118,7 +119,6 @@ class Projectile : public Entity
 
   double speed = 1;
   std::vector<std::unique_ptr<Entity>> *walls;
-  std::vector<std::unique_ptr<Entity>> *enemies;
   std::vector<std::unique_ptr<Entity>> *projectiles;
 
   public:
@@ -168,10 +168,9 @@ class Player : public Entity
   size_t map_width;
   size_t map_height;
   char key_flag = 'N';
-  float speed = 0.2;
+  double speed = 0.2;
   std::vector<std::unique_ptr<Entity>> *walls;
   std::vector<std::unique_ptr<Entity>> *projectiles;
-  std::vector<std::unique_ptr<Entity>> *enemies;
 
 
 public:
@@ -182,12 +181,12 @@ public:
     , map_height ( map_h )
     {}
 
-  void set_colliders ( std::vector<std::unique_ptr<Entity>> *walls, std::vector<std::unique_ptr<Entity>> * projectiles, std::vector<std::unique_ptr<Entity>> * enemies )
+  void set_colliders ( std::vector<std::unique_ptr<Entity>> *walls, std::vector<std::unique_ptr<Entity>> * projectiles)
   {
     this->walls = walls;
     this->projectiles = projectiles;
-    this->enemies = enemies;
   }
+
   void set_map_size (size_t w , size_t h )
   {
     map_width = w;
@@ -290,7 +289,7 @@ public:
         }
 
         if ( position . x < 0 || position . x + width > map_width || position . y < 0 || position . y + height > map_height )
-        // if ( player is not hiting a wall )
+        // if ( player is out of map )
         {
           position . x = dst_rect . x ;
           position . y = dst_rect . y ;
@@ -302,6 +301,18 @@ public:
           dst_rect . y = static_cast<int>(position . y);
         }
 
+        int * player_position_event_x = new int ( dst_rect . x ) ;
+        int * player_position_event_y = new int ( dst_rect . y ) ;
+
+        SDL_Event player_position_event;
+        player_position_event . type = SDL_USEREVENT;
+        // code of timer
+        player_position_event . user . code = 2;
+        player_position_event . user . data1 = (void*)player_position_event_x;
+        player_position_event . user . data2 = (void*)player_position_event_y;
+        
+        SDL_PushEvent ( & player_position_event );
+
       }
     }
   }
@@ -309,8 +320,80 @@ public:
 
 class Enemy : public Entity 
 {
+  int player_x; 
+  int player_y;
+  double speed = 0.3;
+  bool known_player_position = false;
   using Entity::Entity;
-  virtual void on_event ( SDL_Event & e ) {}
+  std::vector<std::unique_ptr<Entity>> * walls;
+
+public:
+  void set_colliders (std::vector<std::unique_ptr<Entity>> * walls)
+  {
+    this->walls = walls;
+  }
+
+  virtual void on_event ( SDL_Event & event ) {
+    if ( event . type == SDL_USEREVENT ) {
+      if ( event . user . code == 2 ) {
+        player_x = *static_cast<int*>(event.user.data1);
+        player_y = *static_cast<int*>(event.user.data2);
+        //set velocity
+
+        if ( dst_rect . x < player_x )
+        {
+          velocity . x = speed;
+        }
+        else
+        {
+          velocity . x = -speed;
+        }
+
+        if ( dst_rect . y > player_y )
+        {
+          velocity . y = -speed;
+        }
+        else
+        {
+          velocity . y = speed;
+        }
+        
+        known_player_position = true;
+      }
+    }
+
+    if ( event . type == SDL_USEREVENT )
+    {
+      if ( event . user .  code == 0 )
+      {
+        //jdi smerem k cili tzn nejdriv vem blizsi souradnici a tu priblizuj
+        if ( known_player_position )
+        {
+
+          size_t dt = *((size_t*)event.user.data1);
+
+          position . x += velocity . x * dt;
+          position . y += velocity . y * dt;
+
+          bool intersect_flag = false;
+          for ( auto & w : *walls ) {
+            if( w -> intersects ( position . x, position . y, width, height ) )
+            {
+              position . x = dst_rect . x ;
+              position . y = dst_rect . y ;
+              intersect_flag = true;
+              break;
+            }
+          }
+
+          if ( ! intersect_flag ) {
+            dst_rect . x = static_cast<int>(position . x);
+            dst_rect . y = static_cast<int>(position . y);
+          }
+        }
+      }
+    }
+  }
 };
 
 class Wall : public Entity
