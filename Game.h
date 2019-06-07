@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <random>
 
 extern Uint32 MY_EVENT_TYPE; 
 
@@ -38,6 +39,7 @@ class Game {
 
     std::vector<std::unique_ptr<Entity>> walls;
     std::vector<std::unique_ptr<Entity>> projectiles;
+    std::vector<std::unique_ptr<Entity>> bonuses;
     Player player;
 
 };

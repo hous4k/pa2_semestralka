@@ -13,6 +13,8 @@
 #define PROJECTILE_HEIGHT 5
 #define PROJECTILE_WIDTH 10
 
+#define RELOAD 20
+
 class Entity {
   protected:
     Vector2 position;
@@ -49,6 +51,10 @@ class Entity {
       texture_path = path;
     }
 
+    Vector2 get_position ()
+    {
+      return position;
+    }
     void set_position ( int x, int y )
     {
       position . x = x;
@@ -121,7 +127,19 @@ class Projectile : public Entity
   std::vector<std::unique_ptr<Entity>> *walls;
   std::vector<std::unique_ptr<Entity>> *projectiles;
 
+  size_t map_width;
+  size_t map_height;
+
+  bool active_flag;
+
   public:
+
+  void set_map_size (size_t w , size_t h )
+  {
+    map_width = w;
+    map_height = h;
+  }
+
   Projectile ( int x , int y, int w, int h, const char * path, size_t angle ) 
     :Entity::Entity(x,y,w,h,path)
   {
@@ -146,6 +164,8 @@ class Projectile : public Entity
       this->velocity . y = -speed;
       break;
     }
+
+    active_flag = true;
   }
 
   virtual void on_event ( SDL_Event & event ) {
@@ -155,6 +175,20 @@ class Projectile : public Entity
         size_t dt = *((size_t*)event.user.data1);
         position . x += velocity . x * dt;
         position . y += velocity . y * dt;
+
+        if ( ( position . x < 0 || position . y < 0 || position . x > map_width || position . y > map_height ) && active_flag )
+        {
+          //send message that you are out of bounds
+          SDL_Event destroy_message;
+          destroy_message . type = SDL_USEREVENT; //MY_EVENT_TYPE;
+            // code of timer
+          destroy_message . user . code = 5;
+          destroy_message . user . data1 = (void*)this;
+
+          SDL_PushEvent ( & destroy_message );
+          std::cout << "message sent" << std::endl;
+          active_flag = false;
+        }
 
         dst_rect . x = static_cast<int>(position . x);
         dst_rect . y = static_cast<int>(position . y);
@@ -169,9 +203,21 @@ class Player : public Entity
   size_t map_height;
   char key_flag = 'N';
   double speed = 0.2;
+
+  
   std::vector<std::unique_ptr<Entity>> *walls;
   std::vector<std::unique_ptr<Entity>> *projectiles;
 
+  unsigned short cntr;
+
+  bool can_shoot;
+
+  unsigned short reload_time;
+
+  double next_level_speed_difference = 0.1;
+  unsigned short next_level_reload_difference = 5;
+
+  //enum bonus_level { RAPIDFIRE,SPEED };
 
 public:
   explicit Player ( int x, int y, int w, int h, const char * path, size_t map_w, size_t map_h ) 
@@ -179,6 +225,9 @@ public:
     , key_flag ( 'N' ) 
     , map_width ( map_w )
     , map_height ( map_h )
+    , cntr ( 0 )
+    , can_shoot ( true )
+    , reload_time ( RELOAD )
     {}
 
   void set_colliders ( std::vector<std::unique_ptr<Entity>> *walls, std::vector<std::unique_ptr<Entity>> * projectiles)
@@ -193,6 +242,24 @@ public:
     map_height = h;
   }
 
+  void up_reload_time () 
+  { 
+    if ( reload_time - next_level_reload_difference > 0 )
+    {
+      reload_time -= next_level_reload_difference; 
+    }
+    else
+    {
+      reload_time = 0; 
+    }
+    
+  }
+
+  void up_speed ()
+  {
+    speed += next_level_speed_difference;
+  }
+
   virtual void on_event ( SDL_Event & event) override
   {
     if ( event . type == SDL_KEYDOWN )
@@ -200,38 +267,39 @@ public:
         switch ( event . key . keysym . sym ) 
         {
             case SDLK_w:
-                if ( key_flag == 'w' || key_flag == 'N') {
+                //if ( key_flag == 'w' || key_flag == 'N') {
                     key_flag = 'w';
                     angle = 270;
                     velocity . y = -speed ;
-                }
+                //}
                 break;
             case SDLK_a:
-                if ( key_flag == 'a' || key_flag == 'N') {
+                //if ( key_flag == 'a' || key_flag == 'N') {
                     key_flag = 'a';
                     angle = 180;
                     velocity . x = -speed ;
-                }
+                //}
                 break;
             case SDLK_d:
-                if ( key_flag == 'd' || key_flag == 'N') {
+                //if ( key_flag == 'd' || key_flag == 'N') {
                     key_flag = 'd';
                     angle = 0;
                     velocity . x = speed ;
-                }
+                //}
                 break;
             case SDLK_s:
-                if ( key_flag == 's' || key_flag == 'N') {
+                //if ( key_flag == 's' || key_flag == 'N') {
                     key_flag = 's';
                     angle = 90;
                     velocity . y = speed ;
-                }
+                //}
                 break;
 
             default:
                 break;
         }
     }
+
 
     if ( event . type == SDL_KEYUP ) {
         switch ( event . key . keysym . sym ) 
@@ -254,14 +322,16 @@ public:
                 break;
             case SDLK_SPACE:
             //  shoot
-              {
-                int start_x = dst_rect . x + dst_rect . w/2;
-                int start_y = dst_rect . y + dst_rect . h/2;
-                std::unique_ptr <Projectile> tmp = std::make_unique<Projectile> (start_x, start_y, PROJECTILE_WIDTH, PROJECTILE_HEIGHT, "projectile.png", angle);
-                tmp -> set_renderer (renderer);
-                tmp -> load_texture ();
-                projectiles -> emplace_back ( std::move(tmp) );
-              }
+                if ( can_shoot ) {
+                  int start_x = dst_rect . x + dst_rect . w/2;
+                  int start_y = dst_rect . y + dst_rect . h/2;
+                  std::unique_ptr <Projectile> tmp = std::make_unique<Projectile> (start_x, start_y, PROJECTILE_WIDTH, PROJECTILE_HEIGHT, "projectile.png", angle);
+                  tmp -> set_renderer (renderer);
+                  tmp -> load_texture ();
+                  tmp -> set_map_size( map_width, map_height );
+                  projectiles -> emplace_back ( std::move(tmp) );
+                  can_shoot = false;
+                }
 
             // proste jen pushnes projektil do projektilu
                 break;
@@ -269,8 +339,20 @@ public:
                 break;
         }
     }
+
     if ( event . type == SDL_USEREVENT ) {
       if ( event . user . code == 0 ) {
+
+
+        if ( ! can_shoot ) 
+        {
+          if ( cntr > reload_time ) 
+          {
+            can_shoot = true;
+            cntr = 0;
+          }
+          ++cntr;
+        }
 
         size_t dt = *((size_t*)event.user.data1);
 
@@ -332,6 +414,7 @@ public:
   {
     this->walls = walls;
   }
+
 
   virtual void on_event ( SDL_Event & event ) {
     if ( event . type == SDL_USEREVENT ) {
@@ -402,25 +485,8 @@ class Wall : public Entity
   virtual void on_event ( SDL_Event & e ) {}
 };
 
-
-/*
-class Projectile : public Entity
+class Bonus : public Entity
 {
-  void set_position ( int x, int y )
-  {
-    position_x = x;
-    position_y = y;
-  }
-
+  using Entity::Entity;
+  virtual void on_event ( SDL_Event & e ) {}
 };
-
-class Gun : public Entity
-{
-  void set_position ( int x, int y )
-  {
-    position_x = x;
-    position_y = y;
-  }
-
-};
-*/

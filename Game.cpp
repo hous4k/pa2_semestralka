@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include <memory>
 #include <fstream>
+#include <exception>
 
 // -1 to initialize the first rendering driver supproting the requested flags
 #define INDEX_OF_RENDERING_DRIVER -1
@@ -18,6 +19,31 @@ SDL_Event Game::event;
 
 
 short UNIT = 32;
+
+
+class multiple_player_defined : public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Multiple players has been set" ;
+  }
+};
+
+class wrong_map_format : public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Wrong map format" ;
+  }
+};
+
+class unset_player : public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "The player has not been set" ;
+  }
+};
 
 Game::Game ( const char * name,
              bool fullscreen  ) : player ( 0,0,UNIT,UNIT, "player.png",0,0 )
@@ -71,6 +97,17 @@ Game::Game ( const char * name,
 
 }
 
+bool coin_flip ( size_t prob ) {
+  std::random_device r;
+  std::mt19937 random_engine (r());
+  std::uniform_int_distribution<int> uniform_dist(1,100);
+  if ( uniform_dist ( random_engine ) <= prob )
+  {
+    return true;
+  }
+  return false;
+}
+
 void Game::collisions() {
   // pro vsechny entity, ktery spolu muzou kolidovat koukni jestli nekolidujou
   // takze pro vsechny wally koukni jestli muzou kolidovat s playerem
@@ -101,7 +138,7 @@ void Game::collisions() {
     ++pr_index;
   }
 
-//bonus
+//bonus TODO
   pr_index = 0;
   for ( auto & pr : projectiles )
   {
@@ -113,7 +150,18 @@ void Game::collisions() {
         pr.reset(nullptr);
         projectiles . erase (std::begin(projectiles)+pr_index);
         //e . reset (nullptr);
+        if( coin_flip ( 100 ) ) {
+          Vector2 v = enemies [ enm_index ] -> get_position();
+          std::cout << "bonus granted" << std::endl;
+          std::unique_ptr<Bonus> tmp =std::make_unique<Bonus> ( Bonus ( v . x , v . y ,UNIT,UNIT, "bonus.png" ) ); 
+          tmp -> set_renderer(renderer);
+          tmp -> load_texture ();
+          bonuses . emplace_back (  std::move( tmp ) );
+          std::cout << bonuses . size() << std::endl;
+        }
         enemies . erase ( std::begin(enemies ) + enm_index );
+        // s urcitou pravdepodobnosti poloz bonus
+
         std::cout << "u hit an enemy" << std::endl;
         break;
       }
@@ -131,6 +179,29 @@ void Game::collisions() {
       std::cout << "Game Over!" << std::endl;
       break;
     }
+  }
+
+  size_t b_index = 0;
+  for ( auto & b : bonuses )
+  {
+    if ( b );
+    if ( b -> intersects ( &player ) )
+    { 
+      b . reset ( nullptr );
+      bonuses . erase ( std::begin( bonuses ) + b_index );
+      if ( coin_flip ( 80 ) )
+      {
+        player . up_reload_time();
+        std::cout << "reload time bonus" << std::endl;
+      }
+      else
+      {
+        player . up_speed();
+        std::cout << "speed bonus" << std::endl;
+      }
+      break;
+    }
+    ++b_index;
   }
 
 }
@@ -152,6 +223,11 @@ void Game::render()
   for ( auto & w : walls )
   {
     w -> draw ();
+  }
+
+  for ( auto & b : bonuses )
+  {
+    b -> draw ();
   }
 
   player . draw ();
@@ -199,6 +275,13 @@ void Game::handle_events()
         delete static_cast<int*>(event . user . data1);
         delete static_cast<int*>(event . user . data2);
       }
+      /*
+      if ( event . user . code == 5 )
+      {
+        delete  static_cast<Entity*>(event . user . data1 );
+        std::cout << "has been destoryed" << std::endl;
+      }
+      */
     }
   }
 }
@@ -215,6 +298,8 @@ void Game::load_map ( const char * path )
 
     bool player_flag = false;
 
+    int prev_width = -1;
+
     while ( map_file . get ( c ) ) {
       std::cout << c;
       switch ( c ){
@@ -227,7 +312,7 @@ void Game::load_map ( const char * path )
           }
           else
           {
-            std::cout << "Error when loading map: \"multiple players has been set\"" << std::endl;
+            throw multiple_player_defined();
           }
           ++x_index;
           break;
@@ -250,6 +335,14 @@ void Game::load_map ( const char * path )
           break;
 
         case '\n':
+          if ( prev_width > -1 ) 
+          {
+            if ( prev_width != x_index )
+            {
+              throw wrong_map_format();
+            }
+          }
+          prev_width = x_index;
           map_width = x_index * UNIT;
           x_index = 0;
           ++y_index;
@@ -263,7 +356,10 @@ void Game::load_map ( const char * path )
     }
     map_height = y_index * UNIT;
 
-    if ( ! player_flag ) { std::cout << "Player has not been set" << std::endl; }
+    if ( ! player_flag ) 
+    { 
+      throw unset_player();
+    }
     map_file . close ();
 }
 

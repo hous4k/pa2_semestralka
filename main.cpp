@@ -59,7 +59,7 @@ int main ( int argc, char * args [])
   delete frame_delay;
   //game . clean ();
 
-  //Syscall param writev(vector[...]) points to uninitialised byte(s)
+  // Syscall param writev(vector[...]) points to uninitialised byte(s)
   // problem with X11
 
 }
