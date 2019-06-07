@@ -14,7 +14,6 @@ int main ( int argc, char * args [])
   const size_t * frame_delay = new size_t ( 1000 / FPS );
 
   uint32_t frame_start;
-  unsigned int frame_time;
 
   size_t last_frame = 0; 
   //Uint32 MY_EVENT_TYPE;
@@ -34,7 +33,6 @@ int main ( int argc, char * args [])
 
   Game game ( "semestralka", false );
 
-  int cnt = 0;
   while ( game . running() ) {
 
     // millisiseconds since initialization
@@ -49,7 +47,6 @@ int main ( int argc, char * args [])
       last_frame = SDL_GetTicks();
       SDL_PushEvent ( & custom_event );
     }
-    frame_time = SDL_GetTicks () - frame_start;
 
     // if computation of vents update and render has been too fast
       //SDL_Delay ( frame_delay - frame_time );

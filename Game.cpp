@@ -97,11 +97,11 @@ Game::Game ( const char * name,
 
 }
 
-bool coin_flip ( size_t prob ) {
+bool coin_flip ( unsigned short prob ) {
   std::random_device r;
   std::mt19937 random_engine (r());
   std::uniform_int_distribution<int> uniform_dist(1,100);
-  if ( uniform_dist ( random_engine ) <= prob )
+  if ( static_cast<unsigned short> ( uniform_dist ( random_engine ) ) <= prob )
   {
     return true;
   }
@@ -337,7 +337,7 @@ void Game::load_map ( const char * path )
         case '\n':
           if ( prev_width > -1 ) 
           {
-            if ( prev_width != x_index )
+            if (  prev_width != static_cast<int> ( x_index ) )
             {
               throw wrong_map_format();
             }

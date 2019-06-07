@@ -201,33 +201,34 @@ class Player : public Entity
 {
   size_t map_width;
   size_t map_height;
-  char key_flag = 'N';
-  double speed = 0.2;
-
-  
-  std::vector<std::unique_ptr<Entity>> *walls;
-  std::vector<std::unique_ptr<Entity>> *projectiles;
-
+  char key_flag;
+  double speed;
   unsigned short cntr;
 
   bool can_shoot;
 
   unsigned short reload_time;
 
-  double next_level_speed_difference = 0.1;
-  unsigned short next_level_reload_difference = 5;
+  double next_level_speed_difference;
+  unsigned short next_level_reload_difference;
+
+  std::vector<std::unique_ptr<Entity>> *walls;
+  std::vector<std::unique_ptr<Entity>> *projectiles;
 
   //enum bonus_level { RAPIDFIRE,SPEED };
 
 public:
   explicit Player ( int x, int y, int w, int h, const char * path, size_t map_w, size_t map_h ) 
     : Entity::Entity( x, y, w, h, path )
-    , key_flag ( 'N' ) 
     , map_width ( map_w )
     , map_height ( map_h )
+    , key_flag ( 'N' ) 
+    , speed ( 0.2 )
     , cntr ( 0 )
     , can_shoot ( true )
     , reload_time ( RELOAD )
+    , next_level_speed_difference ( 0.1 )
+    , next_level_reload_difference ( 5 )
     {}
 
   void set_colliders ( std::vector<std::unique_ptr<Entity>> *walls, std::vector<std::unique_ptr<Entity>> * projectiles)
@@ -267,32 +268,32 @@ public:
         switch ( event . key . keysym . sym ) 
         {
             case SDLK_w:
-                //if ( key_flag == 'w' || key_flag == 'N') {
+                if ( key_flag == 'w' || key_flag == 'N') {
                     key_flag = 'w';
                     angle = 270;
                     velocity . y = -speed ;
-                //}
+                }
                 break;
             case SDLK_a:
-                //if ( key_flag == 'a' || key_flag == 'N') {
+                if ( key_flag == 'a' || key_flag == 'N') {
                     key_flag = 'a';
                     angle = 180;
                     velocity . x = -speed ;
-                //}
+                }
                 break;
             case SDLK_d:
-                //if ( key_flag == 'd' || key_flag == 'N') {
+                if ( key_flag == 'd' || key_flag == 'N') {
                     key_flag = 'd';
                     angle = 0;
                     velocity . x = speed ;
-                //}
+                }
                 break;
             case SDLK_s:
-                //if ( key_flag == 's' || key_flag == 'N') {
+                if ( key_flag == 's' || key_flag == 'N') {
                     key_flag = 's';
                     angle = 90;
                     velocity . y = speed ;
-                //}
+                }
                 break;
 
             default:
